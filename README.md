@@ -1,68 +1,79 @@
 # Python Expense Tracker
 
-A beginner-friendly command-line program for recording what you spend. It uses only the Python standard library, so it works with a normal Python 3 installation.
-
-## Run it
-
-Open a terminal in this folder and run:
+A small command-line project that now introduces the Python tools you will genuinely use in interview questions and real programs. It needs only Python 3.
 
 ```bash
+cd python-expense-tracker
 python3 expense_tracker.py
-```
-
-Choose an option from the menu. Your entries are saved automatically in `expenses.json`, which the program creates after your first expense. That file is deliberately ignored by the program's source code: it is your data, not part of the code.
-
-## Try this first
-
-1. Add `Lunch`, category `Food`, amount `150`.
-2. Add `Metro`, category `Travel`, amount `42.50`.
-3. Choose **View expenses** to see a table.
-4. Choose **View summary** to see totals grouped by category.
-5. Quit and run the program again—the entries should still be there.
-
-## How the program is put together
-
-| Part | What it teaches |
-| --- | --- |
-| `main()` | A `while True` loop, menu choices, and `if` / `elif` / `else` |
-| `add_expense()` | Reading input, creating dictionaries, and adding to a list with `append()` |
-| `print_expenses()` | Loops, `enumerate()`, f-strings, and table formatting |
-| `show_summary()` | Dictionaries as category totals and arithmetic with `Decimal` |
-| `load_expenses()` / `save_expenses()` | Reading and writing JSON files |
-| `try` / `except` | Gracefully handling invalid input instead of crashing |
-
-An expense is represented as a dictionary:
-
-```python
-{
-    "title": "Lunch",
-    "category": "Food",
-    "amount": "150.00",
-    "date": "2026-10-11"
-}
-```
-
-All expenses live together in a Python list. JSON saves that list so the data remains after the program stops.
-
-## Why `Decimal` for money?
-
-Computers store ordinary floating-point numbers approximately. For example, `0.1 + 0.2` can produce a tiny rounding error. `Decimal` is designed for exact base-10 values such as currency, so the tracker uses it when calculating amounts.
-
-## Run the tests
-
-The project includes two small tests. They check the summary calculation and invalid amount handling:
-
-```bash
 python3 -m unittest -v
 ```
 
-## Experiments to try next
+## Project map
 
-- Add a **monthly budget** and show money remaining.
-- Let the user filter the expense list by a category.
-- Ask for a custom date instead of always using today.
-- Add an `income` field and show a balance.
-- Change the currency symbol in the f-strings.
+```
+expense_tracker.py  # menu, input, printing, summary calculations
+models.py           # Transaction and Expense classes
+storage.py          # JSON file reading and writing
+expenses.json       # your data; created after the first expense
+test_expense_tracker.py
+```
 
-When you make a change, run the tests again. If something breaks, that is useful feedback: read the traceback from bottom to top, find the line in your code, and fix one small thing at a time.
-# python-expense-tracker
+## Concepts to study here
+
+| Concept | Where to read it | Why it is here |
+| --- | --- | --- |
+| `class`, `self`, `__init__` | `models.py` | `@dataclass` generates `__init__`; every instance method receives `self` explicitly. |
+| `__str__`, `__repr__`, `__eq__` | `models.py` | We define readable printing; dataclass generates value-based `__eq__`. Try `print(expense)` and `[expense]`. |
+| Inheritance and `super()` | `Transaction` → `Expense` | An expense is a transaction with category and amount. |
+| `@dataclass` | `Expense` | Fields turn into an initializer and equality method without boilerplate. |
+| `@staticmethod` | `Expense.parse_amount` | Validates text without needing an object. |
+| `@classmethod` | `Expense.from_dict` | Creates an object from saved data; `cls` supports subclasses. |
+| Modules and imports | all three Python files | The app imports `Expense`; storage imports it too. |
+| Type hints | function signatures | Helpful editor/documentation clues, but Python does not enforce them at runtime. |
+| `if __name__ == "__main__"` | bottom of `expense_tracker.py` | Starts the app only when run directly—not when a test imports it. |
+| `Counter` | `show_summary()` | Counts expenses per category in one line. |
+| `defaultdict` | `show_summary()` | Starts every category total at zero automatically. |
+| `sorted(..., key=..., reverse=True)` | `show_summary()` | Sorts categories by largest total. |
+| `heapq.nlargest` | `show_summary()` | Finds the three biggest expenses using a heap. |
+| `sum`, `min`, `max` | `show_summary()` | Total spending and highest/lowest expense. |
+| `json.loads` / `json.dumps` | `storage.py` | Convert JSON text ↔ Python data. |
+| `with open(...)` | `storage.py` | Opens files safely and closes them automatically. |
+
+## A useful way to explore
+
+Start the program, add three expenses in two categories, then choose **View summary**. Next, open `expenses.json`: it is a list of dictionaries. Follow the path backwards:
+
+`JSON text` → `json.loads` → `Expense.from_dict` → `Expense objects` → summary calculations.
+
+Then follow saving in the other direction:
+
+`Expense objects` → `to_dict` → `json.dumps` → `JSON text`.
+
+## Two concepts not forced into this app
+
+`deque` is excellent for a queue/BFS, but an expense tracker has no graph traversal or queue. `float("inf")` is usually a starting value for a “smallest distance so far” algorithm; normal `min()` is clearer here. Learn both in a short separate exercise instead:
+
+```python
+from collections import deque
+
+queue = deque(["start"])
+visited = set()
+best_distance = float("inf")
+
+while queue:
+    node = queue.popleft()  # fast removal from the left: perfect for BFS
+    if node not in visited:
+        visited.add(node)
+        # queue.append(each_neighbor)
+```
+
+`any()` and `all()` are also best when there is a real question to ask. Add this after loading expenses to experiment:
+
+```python
+has_food = any(expense.category == "Food" for expense in expenses)
+all_positive = all(expense.amount > 0 for expense in expenses)
+```
+
+## Next challenge
+
+Implement a budget feature: ask for a monthly budget, calculate `budget - total_spent`, and print a warning with `any()` if any one expense is bigger than half the budget.
